@@ -1,0 +1,38 @@
+<section class="panel">
+    <h2>Wallet history</h2>
+    @if (Transactions.Count == 0)
+    {
+        <p class="hint">Nothing yet.</p>
+    }
+    else
+    {
+        <table>
+            <thead>
+                <tr><th>What</th><th class="num">Amount</th><th class="num">Balance</th></tr>
+            </thead>
+            <tbody>
+                @foreach (var transaction in Transactions)
+                {
+                    <tr>
+                        <td>@Describe(transaction)</td>
+                        <td class="num @(transaction.Amount < 0 ? "minus" : "plus")">@Money.Signed(transaction.Amount)</td>
+                        <td class="num">$@transaction.BalanceAfter</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</section>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<TransactionDto> Transactions { get; set; } = [];
+
+    private static string Describe(TransactionDto transaction) => transaction.Type switch
+    {
+        TransactionType.SignUpBonus => "Sign-up chips",
+        TransactionType.Bet => $"Bet, round {transaction.GameRoundId}",
+        TransactionType.Payout => $"Payout, round {transaction.GameRoundId}",
+        TransactionType.Refill => "Refill",
+        _ => transaction.Type.ToString()
+    };
+}

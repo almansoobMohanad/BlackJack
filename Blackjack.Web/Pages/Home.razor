@@ -1,0 +1,256 @@
+@page "/"
+@inject BlackjackApi Api
+
+<PageTitle>Blackjack</PageTitle>
+
+<main class="table">
+    <h1>Blackjack</h1>
+
+    @if (error is not null)
+    {
+        <p class="error" role="alert">@error</p>
+    }
+
+    @if (loading)
+    {
+        <p class="message">Loading...</p>
+    }
+    else if (playerName is null)
+    {
+        <SignUpForm Busy="busy" OnSignUp="SignUp" />
+    }
+    else
+    {
+        <div class="topbar">
+            <span>Playing as <strong>@playerName</strong></span>
+            <button class="link" @onclick="SignOut">Sign out</button>
+        </div>
+
+        <HandView Title="Dealer" Hand="round?.Dealer ?? EmptyHand" VisibleCount="dealerCardsShown" />
+
+        <p class="message @MessageClass" aria-live="polite">@Message</p>
+
+        <HandView Title="You" Hand="round?.Player ?? EmptyHand" />
+
+        <section class="controls">
+            <div class="bank">
+                <span>Chips: <strong>$@balance</strong></span>
+                <span>Bet: <strong>$@(IsPlayerTurn || IsRevealingDealer ? round!.Bet : bet)</strong></span>
+            </div>
+
+            @if (IsPlayerTurn || IsRevealingDealer)
+            {
+                <div class="actions">
+                    <button class="primary" @onclick="Hit" disabled="@(busy || !IsPlayerTurn)">Hit</button>
+                    <button class="primary" @onclick="Stand" disabled="@(busy || !IsPlayerTurn)">Stand</button>
+                </div>
+            }
+            else if (balance < GameLimits.MinBet)
+            {
+                <p>You're out of chips.</p>
+                <button class="primary" @onclick="Refill" disabled="@busy">Refill to $@GameLimits.StartingBalance</button>
+            }
+            else
+            {
+                <div class="chips">
+                    @foreach (var amount in ChipAmounts)
+                    {
+                        <button class="chip" @onclick="() => bet += amount" disabled="@(busy || bet + amount > MaxBet)">+@amount</button>
+                    }
+                    <button @onclick="() => bet = MaxBet" disabled="@busy">All in</button>
+                    <button @onclick="() => bet = 0" disabled="@(busy || bet == 0)">Clear</button>
+                </div>
+                <button class="primary" @onclick="Deal" disabled="@(busy || bet == 0)">Deal</button>
+            }
+        </section>
+
+        <div class="panels">
+            <LeaderboardPanel Entries="leaderboard" CurrentPlayer="@playerName" />
+            <HistoryPanel Transactions="history" />
+        </div>
+    }
+</main>
+
+@code {
+    private static readonly int[] ChipAmounts = [10, 25, 100];
+
+    private static readonly HandDto EmptyHand = new([], null, false, false, false);
+
+    // Pause between dealer cards so the player can follow what happens.
+    private const int DealerDelayMs = 700;
+
+    private bool loading = true;
+    private bool busy;
+    private string? error;
+
+    private string? playerName;
+    private int balance;
+    private int bet = 10;
+    private RoundDto? round;
+    private int? dealerCardsShown;
+    private IReadOnlyList<LeaderboardEntryDto> leaderboard = [];
+    private IReadOnlyList<TransactionDto> history = [];
+
+    private bool IsPlayerTurn => round?.Status == RoundStatus.PlayerTurn;
+
+    private bool IsRevealingDealer => dealerCardsShown is not null;
+
+    // The most the player can bet right now.
+    private int MaxBet => Math.Min(balance, GameLimits.MaxBet);
+
+    protected override async Task OnInitializedAsync()
+    {
+        await RunAsync(async () =>
+        {
+            if (await Api.LoadSavedTokenAsync())
+            {
+                await LoadProfileAsync();
+            }
+        });
+        loading = false;
+    }
+
+    private Task SignUp(string name) => RunAsync(async () =>
+    {
+        await Api.SignUpAsync(name);
+        await LoadProfileAsync();
+    });
+
+    private async Task SignOut()
+    {
+        await Api.SignOutAsync();
+        playerName = null;
+        round = null;
+    }
+
+    private Task Deal() => RunAsync(async () => await ShowRoundAsync(await Api.DealAsync(bet)));
+
+    private Task Hit() => RunAsync(async () => await ShowRoundAsync(await Api.HitAsync(round!.Id)));
+
+    private Task Stand() => RunAsync(async () => await ShowRoundAsync(await Api.StandAsync(round!.Id)));
+
+    private Task Refill() => RunAsync(async () =>
+    {
+        balance = (await Api.RefillAsync()).Balance;
+        bet = Math.Min(10, MaxBet);
+        await RefreshPanelsAsync();
+    });
+
+    private async Task LoadProfileAsync()
+    {
+        var profile = await Api.GetProfileAsync();
+        playerName = profile.Name;
+        balance = profile.Balance;
+        round = profile.CurrentRound;
+        bet = Math.Min(bet, MaxBet);
+        await RefreshPanelsAsync();
+    }
+
+    // Shows a round the server sent back. When the dealer's hidden card has just been
+    // turned over, deals the dealer's cards out one at a time so the player can follow.
+    private async Task ShowRoundAsync(RoundDto next)
+    {
+        bool revealDealer = round is { Status: RoundStatus.PlayerTurn } && round.Id == next.Id
+            && next.Status == RoundStatus.RoundOver && !next.Player.IsBust;
+
+        round = next;
+
+        if (revealDealer)
+        {
+            for (int shown = 2; shown <= next.Dealer.Cards.Count; shown++)
+            {
+                dealerCardsShown = shown;
+                StateHasChanged();
+                await Task.Delay(DealerDelayMs);
+            }
+            dealerCardsShown = null;
+        }
+
+        balance = next.Balance;
+
+        if (next.Status == RoundStatus.RoundOver)
+        {
+            bet = Math.Min(bet, MaxBet);
+            await RefreshPanelsAsync();
+        }
+    }
+
+    private async Task RefreshPanelsAsync()
+    {
+        var leaderboardTask = Api.GetLeaderboardAsync();
+        var walletTask = Api.GetWalletAsync();
+        leaderboard = await leaderboardTask;
+        history = (await walletTask).RecentTransactions;
+    }
+
+    // Runs one server call at a time and shows any error it reports.
+    private async Task RunAsync(Func<Task> action)
+    {
+        if (busy)
+        {
+            return;
+        }
+
+        busy = true;
+        error = null;
+        try
+        {
+            await action();
+        }
+        catch (ApiError e) when (e.Status == System.Net.HttpStatusCode.Unauthorized)
+        {
+            // The saved token no longer matches a player (e.g. the database was reset).
+            await SignOut();
+        }
+        catch (ApiError e)
+        {
+            error = e.Message;
+        }
+        catch (HttpRequestException)
+        {
+            error = "Can't reach the server. Is Blackjack.Api running?";
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+
+    private string Message
+    {
+        get
+        {
+            if (round is null)
+            {
+                return "Place your bet, then press Deal.";
+            }
+            if (IsRevealingDealer)
+            {
+                return "Dealer's turn...";
+            }
+            if (round.Status == RoundStatus.PlayerTurn)
+            {
+                return "Hit or stand?";
+            }
+
+            int amount = Math.Abs(round.Winnings ?? 0);
+            return round.Outcome switch
+            {
+                RoundOutcome.PlayerBlackjack => $"Blackjack! You win ${amount}.",
+                RoundOutcome.PlayerWin when round.Dealer.IsBust => $"Dealer busts. You win ${amount}!",
+                RoundOutcome.PlayerWin => $"You win ${amount}!",
+                RoundOutcome.Push => "Push. Your bet is returned.",
+                RoundOutcome.DealerWin when round.Player.IsBust => $"Bust! You lose ${amount}.",
+                RoundOutcome.DealerWin when round.Dealer.IsBlackjack => $"Dealer has blackjack. You lose ${amount}.",
+                _ => $"Dealer wins. You lose ${amount}."
+            };
+        }
+    }
+
+    private string MessageClass => IsRevealingDealer ? "" : round?.Outcome switch
+    {
+        RoundOutcome.PlayerBlackjack or RoundOutcome.PlayerWin => "win",
+        RoundOutcome.DealerWin => "lose",
+        _ => ""
+    };
+}

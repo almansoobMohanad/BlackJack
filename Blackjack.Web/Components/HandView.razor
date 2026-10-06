@@ -1,0 +1,31 @@
+<section class="hand">
+    <h2>
+        @Title
+        @if (Hand.Cards.Count > 0)
+        {
+            <span class="total">@TotalLabel</span>
+        }
+    </h2>
+    <div class="cards">
+        @foreach (var card in Hand.Cards.Take(VisibleCount ?? Hand.Cards.Count))
+        {
+            <CardView Card="card" />
+        }
+    </div>
+</section>
+
+@code {
+    [Parameter, EditorRequired] public string Title { get; set; } = "";
+
+    [Parameter, EditorRequired] public HandDto Hand { get; set; } = default!;
+
+    // Show only the first few cards, for dealing them out one at a time. Null shows all.
+    [Parameter] public int? VisibleCount { get; set; }
+
+    private string TotalLabel =>
+        Hand.Total is null || VisibleCount is not null ? "?" :
+        Hand.IsBlackjack ? "Blackjack!" :
+        Hand.IsBust ? $"{Hand.Total} - Bust" :
+        Hand.IsSoft ? $"Soft {Hand.Total}" :
+        Hand.Total.Value.ToString();
+}

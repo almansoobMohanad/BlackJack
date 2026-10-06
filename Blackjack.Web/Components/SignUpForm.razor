@@ -1,0 +1,16 @@
+<form class="signup" @onsubmit="Submit">
+    <label for="player-name">Choose a player name</label>
+    <input id="player-name" @bind="name" @bind:event="oninput" maxlength="@GameLimits.MaxNameLength" autocomplete="nickname" />
+    <button class="primary" type="submit" disabled="@(Busy || string.IsNullOrWhiteSpace(name))">Play</button>
+    <p class="hint">You'll start with $@GameLimits.StartingBalance in chips.</p>
+</form>
+
+@code {
+    [Parameter] public bool Busy { get; set; }
+
+    [Parameter] public EventCallback<string> OnSignUp { get; set; }
+
+    private string name = "";
+
+    private Task Submit() => OnSignUp.InvokeAsync(name.Trim());
+}

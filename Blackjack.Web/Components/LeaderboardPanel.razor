@@ -1,0 +1,32 @@
+<section class="panel">
+    <h2>Leaderboard</h2>
+    @if (Entries.Count == 0)
+    {
+        <p class="hint">No finished rounds yet.</p>
+    }
+    else
+    {
+        <table>
+            <thead>
+                <tr><th>#</th><th>Player</th><th class="num">Won</th><th class="num">Net</th></tr>
+            </thead>
+            <tbody>
+                @foreach (var entry in Entries)
+                {
+                    <tr class="@(entry.Name == CurrentPlayer ? "me" : "")">
+                        <td>@entry.Position</td>
+                        <td>@entry.Name</td>
+                        <td class="num">@entry.RoundsWon/@entry.RoundsPlayed</td>
+                        <td class="num">@Money.Signed(entry.NetWinnings)</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</section>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<LeaderboardEntryDto> Entries { get; set; } = [];
+
+    [Parameter] public string? CurrentPlayer { get; set; }
+}

@@ -1,0 +1,28 @@
+@if (Card is null)
+{
+    <div class="card back" aria-label="Face-down card"></div>
+}
+else
+{
+    <div class="card @(IsRed ? "red" : "black")" aria-label="@Card.Rank of @Card.Suit">
+        <span class="corner top">@Card.Rank<br />@Symbol</span>
+        <span class="pip">@Symbol</span>
+        <span class="corner bottom">@Card.Rank<br />@Symbol</span>
+    </div>
+}
+
+@code {
+    // Null means the card is face-down (the server didn't say what it is).
+    [Parameter] public CardDto? Card { get; set; }
+
+    private bool IsRed => Card?.Suit is CardSuit.Hearts or CardSuit.Diamonds;
+
+    // Unicode suit symbols: clubs, diamonds, hearts, spades.
+    private string Symbol => ((char)(Card?.Suit switch
+    {
+        CardSuit.Clubs => 0x2663,
+        CardSuit.Diamonds => 0x2666,
+        CardSuit.Hearts => 0x2665,
+        _ => 0x2660
+    })).ToString();
+}

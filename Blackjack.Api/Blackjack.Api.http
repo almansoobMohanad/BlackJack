@@ -1,0 +1,51 @@
+# Try the API by hand: click "Send Request" above each request (VS Code REST Client
+# extension, or Visual Studio / Rider). Start the app first with: dotnet run --project Blackjack.Api
+@host = http://localhost:5098
+
+### 1. Sign up. Copy "token" from the response into @token below.
+POST {{host}}/api/players
+Content-Type: application/json
+
+{ "name": "Alice" }
+
+###
+@token = paste-token-here
+
+### 2. Your profile, balance, and any round in progress
+GET {{host}}/api/players/me
+Authorization: Bearer {{token}}
+
+### 3. Deal a round with a $25 bet. Note the dealer's second card is null (face-down).
+POST {{host}}/api/rounds
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "bet": 25 }
+
+###
+@roundId = 1
+
+### 4. Hit
+POST {{host}}/api/rounds/{{roundId}}/hit
+Authorization: Bearer {{token}}
+
+### 5. Stand (the dealer plays out the rest on the server)
+POST {{host}}/api/rounds/{{roundId}}/stand
+Authorization: Bearer {{token}}
+
+### 6. Wallet balance and audit trail
+GET {{host}}/api/wallet
+Authorization: Bearer {{token}}
+
+### 7. Refill (only allowed when you're out of chips)
+POST {{host}}/api/wallet/refill
+Authorization: Bearer {{token}}
+
+### 8. Leaderboard (no sign-in needed)
+GET {{host}}/api/leaderboard?top=10
+
+### 9. Cheating attempt: no token, so this is rejected with 401
+POST {{host}}/api/rounds
+Content-Type: application/json
+
+{ "bet": 25 }

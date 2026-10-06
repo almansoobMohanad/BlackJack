@@ -1,0 +1,408 @@
+:root {
+    --felt: #0b6623;
+    --felt-dark: #063d15;
+    --gold: #f5c542;
+    --card-face: #fffdf7;
+    --card-red: #c62828;
+    --ink: #1b1b1b;
+    --lose: #ffb4a9;
+}
+
+html, body {
+    margin: 0;
+}
+
+html {
+    background: var(--felt-dark);
+}
+
+body {
+    min-height: 100vh;
+    background: radial-gradient(ellipse at top, var(--felt) 0%, var(--felt-dark) 100%);
+    color: #fff;
+    font-family: system-ui, "Segoe UI", Roboto, sans-serif;
+}
+
+/* ---------- Table layout ---------- */
+
+.table {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 1.5rem 16px 3rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+h1 {
+    margin: 0;
+    text-align: center;
+    color: var(--gold);
+    font-size: 2.2rem;
+    letter-spacing: 0.05em;
+}
+
+    /* Blazor focuses the heading after navigation (for screen readers); hide the outline it leaves. */
+    h1:focus {
+        outline: none;
+    }
+
+.hand h2 {
+    margin: 0 0 0.5rem;
+    display: flex;
+    align-items: baseline;
+    gap: 0.6rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.total {
+    padding: 0.1rem 0.7rem;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.3);
+    font-size: 0.95rem;
+}
+
+.cards {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    min-height: 124px;
+}
+
+.message {
+    margin: 0;
+    min-height: 1.6em;
+    text-align: center;
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+    .message.win {
+        color: var(--gold);
+    }
+
+    .message.lose {
+        color: var(--lose);
+    }
+
+/* ---------- Cards ---------- */
+
+.card {
+    position: relative;
+    width: 86px;
+    height: 124px;
+    box-sizing: border-box;
+    border-radius: 8px;
+    background: var(--card-face);
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.35);
+    font-weight: 700;
+    user-select: none;
+    animation: deal 0.25s ease-out;
+}
+
+    .card.red {
+        color: var(--card-red);
+    }
+
+    .card.black {
+        color: var(--ink);
+    }
+
+    .card.back {
+        border: 4px solid var(--card-face);
+        background: repeating-linear-gradient(45deg, #8b1e1e 0 6px, #a52a2a 6px 12px);
+    }
+
+.corner {
+    position: absolute;
+    font-size: 0.95rem;
+    line-height: 1;
+    text-align: center;
+}
+
+    .corner.top {
+        top: 6px;
+        left: 7px;
+    }
+
+    .corner.bottom {
+        bottom: 6px;
+        right: 7px;
+        transform: rotate(180deg);
+    }
+
+.pip {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    font-size: 2.6rem;
+}
+
+@keyframes deal {
+    from {
+        opacity: 0;
+        transform: translateY(-16px);
+    }
+
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .card {
+        animation: none;
+    }
+}
+
+/* ---------- Controls ---------- */
+
+.controls {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.9rem;
+    padding: 1rem;
+    border-radius: 12px;
+    background: rgba(0, 0, 0, 0.25);
+}
+
+    .controls p {
+        margin: 0;
+    }
+
+.bank {
+    display: flex;
+    gap: 1.5rem;
+    font-size: 1.05rem;
+}
+
+.chips, .actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+button {
+    padding: 0.55rem 1.2rem;
+    border: none;
+    border-radius: 8px;
+    background: #e8e8e8;
+    color: var(--ink);
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+    button:not(:disabled):hover {
+        filter: brightness(1.08);
+    }
+
+    button:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+    }
+
+    button.primary {
+        min-width: 110px;
+        background: var(--gold);
+    }
+
+    button.chip {
+        border: 3px dashed #1565c0;
+        border-radius: 999px;
+        background: #fff;
+        color: #1565c0;
+    }
+
+button.link {
+    padding: 0;
+    background: none;
+    color: var(--gold);
+    text-decoration: underline;
+}
+
+/* ---------- Sign-up, top bar, errors ---------- */
+
+.signup {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1.5rem 1rem;
+    border-radius: 12px;
+    background: rgba(0, 0, 0, 0.25);
+}
+
+    .signup input {
+        width: min(100%, 260px);
+        padding: 0.55rem 0.8rem;
+        border: none;
+        border-radius: 8px;
+        font: inherit;
+    }
+
+.topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1rem;
+}
+
+.error {
+    margin: 0;
+    padding: 0.6rem 1rem;
+    border-radius: 8px;
+    background: rgba(198, 40, 40, 0.85);
+    text-align: center;
+}
+
+.hint {
+    margin: 0;
+    opacity: 0.8;
+    font-size: 0.9rem;
+}
+
+/* ---------- Leaderboard and wallet history ---------- */
+
+.panels {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1rem;
+}
+
+.panel {
+    padding: 0.9rem 1rem;
+    border-radius: 12px;
+    background: rgba(0, 0, 0, 0.25);
+}
+
+    .panel h2 {
+        margin: 0 0 0.5rem;
+        font-size: 1.05rem;
+        color: var(--gold);
+    }
+
+    .panel table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.92rem;
+    }
+
+    .panel th {
+        text-align: left;
+        font-weight: 600;
+        opacity: 0.75;
+    }
+
+    .panel th, .panel td {
+        padding: 0.25rem 0.3rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .panel .num {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .panel tr.me td {
+        color: var(--gold);
+        font-weight: 700;
+    }
+
+    .panel .plus {
+        color: #9be7a8;
+    }
+
+    .panel .minus {
+        color: var(--lose);
+    }
+
+/* ---------- Small screens ---------- */
+
+@media (max-width: 480px) {
+    .card {
+        width: 64px;
+        height: 92px;
+    }
+
+    .pip {
+        font-size: 2rem;
+    }
+
+    .cards {
+        min-height: 92px;
+    }
+}
+
+/* ---------- Blazor template: error bar and loading spinner ---------- */
+
+#blazor-error-ui {
+    color-scheme: light only;
+    background: lightyellow;
+    color: var(--ink);
+    bottom: 0;
+    box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.2);
+    box-sizing: border-box;
+    display: none;
+    left: 0;
+    padding: 0.6rem 1.25rem 0.7rem 1.25rem;
+    position: fixed;
+    width: 100%;
+    z-index: 1000;
+}
+
+    #blazor-error-ui .dismiss {
+        cursor: pointer;
+        position: absolute;
+        right: 0.75rem;
+        top: 0.5rem;
+    }
+
+.blazor-error-boundary {
+    background: #b32121;
+    padding: 1rem;
+    color: white;
+}
+
+    .blazor-error-boundary::after {
+        content: "An error has occurred."
+    }
+
+.loading-progress {
+    position: absolute;
+    display: block;
+    width: 8rem;
+    height: 8rem;
+    inset: 20vh 0 auto 0;
+    margin: 0 auto 0 auto;
+}
+
+    .loading-progress circle {
+        fill: none;
+        stroke: rgba(255, 255, 255, 0.2);
+        stroke-width: 0.6rem;
+        transform-origin: 50% 50%;
+        transform: rotate(-90deg);
+    }
+
+        .loading-progress circle:last-child {
+            stroke: var(--gold);
+            stroke-dasharray: calc(3.141 * var(--blazor-load-percentage, 0%) * 0.8), 500%;
+            transition: stroke-dasharray 0.05s ease-in-out;
+        }
+
+.loading-progress-text {
+    position: absolute;
+    text-align: center;
+    font-weight: bold;
+    inset: calc(20vh + 3.25rem) 0 auto 0.2rem;
+}
+
+    .loading-progress-text:after {
+        content: var(--blazor-load-percentage-text, "Loading");
+    }
